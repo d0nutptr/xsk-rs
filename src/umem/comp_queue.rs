@@ -41,7 +41,7 @@ impl CompQueue {
     /// [`TxQueue`]: crate::socket::TxQueue
     /// [`FillQueue`]: crate::FillQueue
     #[inline]
-    pub unsafe fn consume(&mut self, descs: &mut [FrameDesc]) -> usize {
+    pub unsafe fn consume<'a>(&mut self, descs: impl ExactSizeIterator<Item = &'a mut FrameDesc>) -> usize {
         let nb = descs.len() as u64;
 
         if nb == 0 {
@@ -53,7 +53,7 @@ impl CompQueue {
         let cnt = unsafe { libbpf_sys::_xsk_ring_cons__peek(self.ring.as_mut(), nb, &mut idx) };
 
         if cnt > 0 {
-            for desc in descs.iter_mut().take(cnt as usize) {
+            for desc in descs.take(cnt as usize) {
                 let addr =
                     unsafe { *libbpf_sys::_xsk_ring_cons__comp_addr(self.ring.as_ref(), idx) };
 

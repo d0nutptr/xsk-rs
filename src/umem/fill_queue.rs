@@ -47,7 +47,7 @@ impl FillQueue {
     /// [`TxQueue`]: crate::TxQueue
     /// [`RxQueue`]: crate::RxQueue
     #[inline]
-    pub unsafe fn produce(&mut self, descs: &[FrameDesc]) -> usize {
+    pub unsafe fn produce<'a>(&mut self, descs: impl ExactSizeIterator<Item = &'a FrameDesc>) -> usize {
         let nb = descs.len() as u64;
 
         if nb == 0 {
@@ -59,7 +59,7 @@ impl FillQueue {
         let cnt = unsafe { libbpf_sys::_xsk_ring_prod__reserve(self.ring.as_mut(), nb, &mut idx) };
 
         if cnt > 0 {
-            for desc in descs.iter().take(cnt as usize) {
+            for desc in descs.take(cnt as usize) {
                 unsafe {
                     *libbpf_sys::_xsk_ring_prod__fill_addr(self.ring.as_mut(), idx) =
                         desc.addr as u64
@@ -111,9 +111,9 @@ impl FillQueue {
     ///
     /// [`produce`]: Self::produce
     #[inline]
-    pub unsafe fn produce_and_wakeup(
+    pub unsafe fn produce_and_wakeup<'a>(
         &mut self,
-        descs: &[FrameDesc],
+        descs: impl ExactSizeIterator<Item = &'a FrameDesc>,
         socket_fd: &mut Fd,
         poll_timeout: i32,
     ) -> io::Result<usize> {

@@ -44,7 +44,7 @@ impl TxQueue {
     /// [`CompQueue`]: crate::CompQueue
     /// [`Umem`]: crate::Umem
     #[inline]
-    pub unsafe fn produce(&mut self, descs: &[FrameDesc]) -> usize {
+    pub unsafe fn produce<'a>(&mut self, descs: impl ExactSizeIterator<Item = &'a FrameDesc>) -> usize {
         let nb = descs.len() as u64;
 
         if nb == 0 {
@@ -56,7 +56,7 @@ impl TxQueue {
         let cnt = unsafe { libbpf_sys::_xsk_ring_prod__reserve(self.ring.as_mut(), nb, &mut idx) };
 
         if cnt > 0 {
-            for desc in descs.iter().take(cnt as usize) {
+            for desc in descs.take(cnt as usize) {
                 let send_pkt_desc =
                     unsafe { libbpf_sys::_xsk_ring_prod__tx_desc(self.ring.as_mut(), idx) };
 
@@ -114,7 +114,7 @@ impl TxQueue {
     ///
     /// [`produce`]: Self::produce
     #[inline]
-    pub unsafe fn produce_and_wakeup(&mut self, descs: &[FrameDesc]) -> io::Result<usize> {
+    pub unsafe fn produce_and_wakeup<'a>(&mut self, descs: impl ExactSizeIterator<Item = &'a FrameDesc>) -> io::Result<usize> {
         let cnt = unsafe { self.produce(descs) };
 
         if self.needs_wakeup() {
